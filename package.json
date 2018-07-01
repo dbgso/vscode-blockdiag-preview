@@ -1,9 +1,9 @@
 {
-	"name": "vscode-css-properties",
-	"displayName": "Preview CSS Properties Sample",
-	"description": "A sample illustrating the use of TextContentProviders and the `vscode.previewHtml` command, introduce in 0.10.7",
+	"name": "vscode-blockdiag-preview",
+	"displayName": "Preview Blockdiag ",
+	"description": "Live preview for Blockdiag",
 	"version": "0.0.10",
-	"publisher": "eg2",
+	"publisher": "dbgso",
 	"galleryBanner": {
 		"color": "#5c2d91",
 		"theme": "dark"
@@ -24,24 +24,48 @@
 		"vscode": "^0.10.7"
 	},
 	"activationEvents": [
-		"onCommand:extension.showCssPropertyPreview"
+		"onCommand:extension.showBlockDiagPreview"
 	],
 	"main": "./out/extension",
 	"contributes": {
 		"commands": [
 			{
-				"command": "extension.showCssPropertyPreview",
-				"title": "Show CSS Properties Preview"
+				"command": "extension.showBlockDiagPreview",
+				"title": "Show BlockDiag Preview"
 			}
 		],
 		"menus": {
 			"editor/title": [
 				{
-					"command": "extension.showCssPropertyPreview",
+					"command": "extension.showBlockDiagPreview",
 					"when": "resourceLangId == css"
 				}
 			]
-		}
+		},
+		"languages": [
+			{
+				"id": "blockdiagram",
+				"aliases": [
+					"BlockDiag"
+				],
+				"extensions": [
+					".diag"
+				],
+				"configuration": "./language-configuration.json"
+			}
+		],
+		"snippets": [
+			{
+				"language": "blockdiagram",
+				"path": "./snippets/diagram.json"
+			}
+		],
+		"keybindings": [
+			{
+				"command": "extension.showBlockDiagPreview",
+				"key": "Alt + D"
+			}
+		]
 	},
 	"scripts": {
 		"vscode:prepublish": "tsc -p ./",
@@ -53,5 +77,8 @@
 		"typescript": "^2.1.4",
 		"vscode": "^1.1.17",
 		"@types/node": "*"
+	},
+	"dependencies": {
+		"request": "^2.81.0"
 	}
 }

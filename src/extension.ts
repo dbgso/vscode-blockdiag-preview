@@ -4,11 +4,73 @@
 'use strict';
 
 import * as vscode from 'vscode';
+import * as fs from 'fs'
+
+const request = require('request')
 
 export function activate(context: vscode.ExtensionContext) {
 
 	let previewUri = vscode.Uri.parse('css-preview://authority/css-preview');
+	
+	let timeout = null;
+	const d = vscode.languages.createDiagnosticCollection();
 
+	vscode.workspace.onDidChangeTextDocument(event => {
+		clearTimeout(timeout);
+		timeout = setTimeout(() => {
+			const editor = vscode.window.activeTextEditor;
+			const doc = editor.document;
+
+			console.log("change");
+			const options = {
+				uri: 'http://localhost:8000/api/v1/blockdiag',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				json: {
+					'source': doc.getText()
+				}
+			}
+			request.post(options, (error, response, body) => {
+				d.clear();
+				d.set(doc.uri, []);
+				if (response.statusCode === 200) {
+					fs.writeFileSync('/tmp/sample/test.svg', body.image)
+				} else {
+					const erromessage: string = body.error;
+					console.log(body.error);	
+					const position = get_error_position(body.error);
+					const line = position[0];
+					const column = position[1];
+
+					const startPos = doc.lineAt(Number(line) - 1).range;
+					// let endPos = doc.positionAt(Number(line) + 1);
+					// const range = new vscode.Range(startPos, endPos);
+					const n:number = doc.offsetAt(startPos.start) + Number(column) - 2;
+					// const p:vscode.Position = doc.positionAt(n);
+					const ran = new vscode.Range(doc.positionAt(n), doc.positionAt(n+1))
+					
+					const diag = new vscode.Diagnostic(ran, body.error, vscode.DiagnosticSeverity.Error);
+					d.set(doc.uri, [diag]);
+
+				}
+			});
+		}, 500);
+	});
+
+	function get_error_position(erromessage: string) {
+		const positions = erromessage.match(/[\d,]+/g);
+		if (positions.length == 0)
+			throw new Error('invalid error response. ' + erromessage);
+		const first = positions[0];
+
+		// pattern => got unexpected token: 7,10-7,10: Op '{'
+		if (first.includes(','))
+			return first.match(/[\d]+/g);;
+
+		// pattern => Got unexpected token at line 5 column 14
+		return positions;
+	}
 	class TextDocumentContentProvider implements vscode.TextDocumentContentProvider {
 		private _onDidChange = new vscode.EventEmitter<vscode.Uri>();
 
@@ -83,8 +145,8 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	})
 
-	let disposable = vscode.commands.registerCommand('extension.showCssPropertyPreview', () => {
-		return vscode.commands.executeCommand('vscode.previewHtml', previewUri, vscode.ViewColumn.Two, 'CSS Property Preview').then((success) => {
+	let disposable = vscode.commands.registerCommand('extension.showBlockDiagPreview', () => {
+		return vscode.commands.executeCommand('vscode.previewHtml', "file:///ramdisk/sample/test.svg", vscode.ViewColumn.Two, 'CSS Property Preview').then((success) => {
 		}, (reason) => {
 			vscode.window.showErrorMessage(reason);
 		});

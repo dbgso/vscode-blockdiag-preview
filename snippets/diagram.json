@@ -1,0 +1,10 @@
+{
+    "sample": {
+        "prefix": "diagram",
+        "body": [
+            "diagram{",
+                "  $1",
+            "}"
+        ], "description": "diagram start"
+    }
+}
