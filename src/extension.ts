@@ -11,6 +11,7 @@ const request = require('request')
 export function activate(context: vscode.ExtensionContext) {
 
 	let previewUri = vscode.Uri.parse('css-preview://authority/css-preview');
+	let previewBody:string;
 	
 	let timeout = null;
 	const d = vscode.languages.createDiagnosticCollection();
@@ -60,7 +61,8 @@ export function activate(context: vscode.ExtensionContext) {
 					d.clear();
 					d.set(doc.uri, []);
 					if (response.statusCode === 200) {
-						fs.writeFileSync('/tmp/sample/test.svg', body.image)
+						previewBody = body.image;
+						this._onDidChange.fire(uri);
 					} else {
 						const erromessage: string = body.error;
 						console.log(body.error);	
@@ -69,8 +71,6 @@ export function activate(context: vscode.ExtensionContext) {
 						const column = position[1];
 	
 						const startPos = doc.lineAt(Number(line) - 1).range;
-						// let endPos = doc.positionAt(Number(line) + 1);
-						// const range = new vscode.Range(startPos, endPos);
 						const n: number = doc.offsetAt(startPos.start) + Number(column) - 2;
 						// const p:vscode.Position = doc.positionAt(n);
 						const ran = new vscode.Range(doc.positionAt(n), doc.positionAt(n + 1))
@@ -85,8 +85,8 @@ export function activate(context: vscode.ExtensionContext) {
 
 		private createCssSnippet() {
 			let editor = vscode.window.activeTextEditor;
-			if (!(editor.document.languageId === 'css')) {
-				return this.errorSnippet("Active editor doesn't show a CSS document - no properties to preview.")
+			if (!(editor.document.languageId === 'blockdiagram')) {
+				return this.errorSnippet("Active editor doesn't show a blockdiag document - no properties to preview.")
 			}
 			return this.extractSnippet();
 		}
@@ -98,11 +98,7 @@ export function activate(context: vscode.ExtensionContext) {
 			let propStart = text.lastIndexOf('{', selStart);
 			let propEnd = text.indexOf('}', selStart);
 
-			if (propStart === -1 || propEnd === -1) {
-				return this.errorSnippet("Cannot determine the rule's properties.");
-			} else {
-				return this.snippet(editor.document, propStart, propEnd);
-			}
+			return this.snippet(editor.document, propStart, propEnd);
 		}
 
 		private errorSnippet(error: string): string {
@@ -113,17 +109,8 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 
 		private snippet(document: vscode.TextDocument, propStart: number, propEnd: number): string {
-			const properties = document.getText().slice(propStart + 1, propEnd);
-			return `<style>
-					#el {
-						${properties}
-					}
-				</style>
-				<body>
-					<div>Preview of the <a href="${encodeURI('command:extension.revealCssRule?' + JSON.stringify([document.uri, propStart, propEnd]))}">CSS properties</a></div>
-					<hr>
-					<div id="el">Lorem ipsum dolor sit amet, mi et mauris nec ac luctus lorem, proin leo nulla integer metus vestibulum lobortis, eget</div>
-				</body>`;
+			const properties = document.getText();
+			return '<style>body{background: white}</style> <body>' + previewBody + '</body>';
 		}
 	}
 
@@ -143,7 +130,7 @@ export function activate(context: vscode.ExtensionContext) {
 	})
 
 	let disposable = vscode.commands.registerCommand('extension.showBlockDiagPreview', () => {
-		return vscode.commands.executeCommand('vscode.previewHtml', "file:///tmp/sample/test.svg", vscode.ViewColumn.Two, 'CSS Property Preview').then((success) => {
+		return vscode.commands.executeCommand('vscode.previewHtml', previewUri, vscode.ViewColumn.Two, 'CSS Property Preview').then((success) => {
 		}, (reason) => {
 			vscode.window.showErrorMessage(reason);
 		});
