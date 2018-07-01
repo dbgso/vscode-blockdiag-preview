@@ -40,15 +40,15 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 
 		public update(uri: vscode.Uri) {
-			// this._onDidChange.fire(uri);
 			clearTimeout(timeout);
 			timeout = setTimeout(() => {
 				const editor = vscode.window.activeTextEditor;
 				const doc = editor.document;
 	
 				console.log("change");
+				const type:string =getType(doc.getText());
 				const options = {
-					uri: 'http://localhost:8000/api/v1/blockdiag',
+					uri: 'http://localhost:8000/api/v1/' + type,
 					headers: {
 						'Content-Type': 'application/json'
 					},
@@ -163,6 +163,13 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 		}
 	});
+
+	function getType(code: string):string  {
+		const reg = RegExp("(.+)\s*{", "g").exec(code)
+		if (reg.length > 1)
+			return reg[1];
+		return null;
+	}
 
 	context.subscriptions.push(disposable, registration);
 }
